@@ -12,19 +12,23 @@
                 rcall USART_Init
 
 LOOP:
-                ldi r16, 'H'
+                rcall USART_Receive
                 rcall USART_Transmit
-                ldi r16, 'E'
-                rcall USART_Transmit
-                ldi r16, 'L'
-                rcall USART_Transmit
-                ldi r16, 'L'
-                rcall USART_Transmit
-                ldi r16, 'O'
-                rcall USART_Transmit
-                ldi r16, '\n'
-                rcall USART_Transmit
-                rjmp WAIT_1S
+
+                ; ldi r16, 'H'
+                ; rcall USART_Transmit
+                ; ldi r16, 'E'
+                ; rcall USART_Transmit
+                ; ldi r16, 'L'
+                ; rcall USART_Transmit
+                ; ldi r16, 'L'
+                ; rcall USART_Transmit
+                ; ldi r16, 'O'
+                ; rcall USART_Transmit
+                ; ldi r16, '\n'
+                ; rcall USART_Transmit
+                ; rjmp WAIT_1S
+
                 rjmp LOOP
 USART_Init:
                 ; Set baud rate - sts as not IO ports
@@ -46,19 +50,28 @@ USART_Transmit:
                 sts     UDR0,r16 ; sts as not an IO register
                 ret
 
+USART_Receive:
+                ; Wait for data to be received
+                lds     r15, UCSR0A ; load value to a register
+                sbrs    r15, RXC0  ; check bit set in register (not IO)
+                rjmp    USART_Receive
+                ; Get and return received data from buffer
+                lds     r16, UDR0
+                ret
+
 ;; wait sort of 1sec
 WAIT_1S:
-                ldi     r16, 64
-W_set17:        ldi     r17, 250
+                ldi     r17, 64 ; 64 for sec
 W_set18:        ldi     r18, 250
-W_dec18:        dec     r18
+W_set19:        ldi     r19, 250
+W_dec19:        dec     r19
                 nop
-                brne    W_dec18
+                brne    W_dec19
+
+                dec     r18
+                brne    W_set19
 
                 dec     r17
                 brne    W_set18
-
-                dec     r16
-                brne    W_set17
 
                 ret
