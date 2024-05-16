@@ -1,7 +1,7 @@
 /*
-* usart.c - loopbavk
+* usart.c
 *
-* Created : 15-08-2020 08:34:15 PM
+* Created : 15-08-2020 09:34:44 PM
 * Author  : Arnab Kumar Das
 * Website : www.ArnabKumarDas.com
 */
@@ -10,6 +10,7 @@
 
 #include <avr/io.h>      // Contains all the I/O Register Macros
 #include <util/delay.h>  // Generates a Blocking Delay
+#include <avr/interrupt.h> // Contains all interrupt vectors
 
 #define USART_BAUDRATE 9600 // Desired Baud Rate
 #define BAUD_PRESCALER (((F_CPU / (USART_BAUDRATE * 16UL))) - 1)
@@ -31,6 +32,11 @@
 #define EIGHT_BIT (3<<UCSZ00)
 #define DATA_BIT   EIGHT_BIT  // USART Data Bit Selection
 
+#define RX_COMPLETE_INTERRUPT         (1<<RXCIE0)
+#define DATA_REGISTER_EMPTY_INTERRUPT (1<<UDRIE0)
+
+volatile uint8_t USART_ReceiveBuffer; // Global Buffer
+
 void USART_Init()
 {
 	// Set Baud Rate
@@ -42,30 +48,23 @@ void USART_Init()
 
 	// Enable Receiver and Transmitter
 	UCSR0B = (1<<RXEN0) | (1<<TXEN0);
-}
 
-uint8_t USART_ReceivePolling()
-{
-	uint8_t DataByte;
-	while (( UCSR0A & (1<<RXC0)) == 0) {}; // Do nothing until data have been received
-	DataByte = UDR0 ;
-	return DataByte;
-}
-
-void USART_TransmitPolling(uint8_t DataByte)
-{
-	while (( UCSR0A & (1<<UDRE0)) == 0) {}; // Do nothing until UDR is ready
-	UDR0 = DataByte;
+	//Enable Global Interrupts
+	sei();
 }
 
 int main()
 {
 	USART_Init();
-	char LocalData;
+	UCSR0B |= RX_COMPLETE_INTERRUPT;
 	while (1)
 	{
-		LocalData = USART_ReceivePolling();
-		USART_TransmitPolling(LocalData);
 	}
 	return 0;
+}
+
+ISR(USART_RX_vect)
+{
+	USART_ReceiveBuffer = UDR0;
+	UDR0 = USART_ReceiveBuffer;
 }

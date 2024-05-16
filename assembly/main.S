@@ -5,8 +5,14 @@
 .section .bss
 
 .section .text
-                .org 0x00
+.org 0x0000
+                jmp MAIN
+; .org 0x0024 ; USART_RXC -> receive complete
+;                 jmp USART_Receive
+
+MAIN:
                 ; set r16:r17 to 103 to set the baud rate to 9600
+                ; atmega328p is little endian.
                 ldi     r16, 103
                 ldi     r17, 103 >> 8
                 rcall USART_Init
@@ -37,7 +43,7 @@ USART_Init:
                 ; Enable receiver and transmitter
                 ldi r16, (1<<RXEN0)|(1<<TXEN0)
                 sts UCSR0B,r16
-                ; Set frame format: 8data, 2stop bit
+                ; Set frame format: 2stop bit, 8 data  bit
                 ldi r16, (1<<USBS0)|(3<<UCSZ00)
                 sts UCSR0C,r16
                 ret
